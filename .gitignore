@@ -1,0 +1,18 @@
+# Idea Files #
+##############
+
+*.name
+*.xml
+*.iml
+
+# Compiled Source #
+###################
+*.pyc
+
+# Database #
+############
+*.sqlite3
+
+# Migrations #
+##############
+migrations/
