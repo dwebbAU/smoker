@@ -19,5 +19,7 @@ from smokerapi import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^',include('smokerapi.urls'))
+    url(r'^',include('smokerweb.urls')),
+    url(r'^api/',include('smokerapi.urls')),
+    url(r'^api-auth/',include('rest_framework.urls',namespace='rest_framework')),
 ]

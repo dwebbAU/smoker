@@ -1,5 +1,14 @@
-from smokerapi.models import SensorData, Instruction
+from smokerapi.models import SensorData, Instruction, Recipe, Cook
 
-def calculate_fanSpeed(instruction):
-  instruction.speedFan = instruction.sensordata.speedFan / 2 
-  instruction.save()
+def calculate_instruction(cook_set, sensordata):
+
+    try:
+        cook = cook_set.get(controller=sensordata.controller)
+    except Cook.DoesNotExist:
+        return
+
+    if cook.recipe.max_temp > sensordata.tempAmbient:
+        instruction = Instruction.objects.create(speedFan=sensordata.speedFan + 10,cook = cook,controller = sensordata.controller)
+        instruction.save()
+
+
