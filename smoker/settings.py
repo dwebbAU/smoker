@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'smokerapi',
     'smokerweb',
+    'bootstrap3',
 ]
 
 REST_FRAMEWORK = {

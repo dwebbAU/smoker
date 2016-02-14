@@ -25,7 +25,7 @@ class Recipe(models.Model):
 class Cook(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     complete = models.BooleanField(default=False)
-    controller = models.OneToOneField('auth.User',related_name='cook')
+    controller = models.ForeignKey('auth.User',related_name='cook')
     recipe = models.ForeignKey(Recipe,related_name='cook')
     owner = models.ForeignKey('auth.User',related_name='cooks')
 
