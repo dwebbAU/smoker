@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
 from django.db import models
-
-
+from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext as _
 
 class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -18,6 +18,11 @@ class Cook(models.Model):
     controller = models.ForeignKey('auth.User',related_name='cook')
     recipe = models.ForeignKey(Recipe,related_name='cook')
     owner = models.ForeignKey('auth.User',related_name='cooks')
+
+    def clean(self):
+        for cook in self.controller.cook.all():
+          if not cook.complete and cook != self:
+            raise ValidationError(_('Controller is already involved in another active cook.'))
 
     def __str__(self):
       return self.created.strftime('%d/%m/%y') + " - " + self.recipe.title + " (" + self.owner.username + ")"
@@ -43,6 +48,19 @@ class SensorData(models.Model):
       super(SensorData,self).save(*args, **kwargs)
     except Cook.DoesNotExist:
       super(SensorData,self).save(*args, **kwargs)
+
+  def calculate_target_speed_fan(self):
+    if self.cook:
+      if self.cook.recipe.max_temp > self.tempAmbient:
+        target_speed_fan = self.speedFan + 10
+        return target_speed_fan
+      elif self.cook.recipe.max_temp < self.tempAmbient:
+        target_speed_fan = self.speedFan - 10
+        return target_speed_fan
+    else:
+      return 0
+  
+  target_speed_fan = property(calculate_target_speed_fan)  
 
 class Instruction(models.Model):
   created = models.DateTimeField(auto_now_add=True)

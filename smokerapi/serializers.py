@@ -8,7 +8,7 @@ class SensorDataSerializer(serializers.ModelSerializer):
 
   class Meta:
     model = SensorData
-    fields = ('id','tempAmbient','tempInternal','speedFan','controller','cook')
+    fields = ('id','tempAmbient','tempInternal','speedFan','controller','cook','target_speed_fan')
 
 class RecipeSerializer(serializers.ModelSerializer):
 

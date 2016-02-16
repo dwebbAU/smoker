@@ -14,7 +14,6 @@ class SensorDataList(generics.ListCreateAPIView):
 
   def perform_create(self, serializer):
       sensordata = serializer.save(controller = self.request.user)
-      calculate_instruction(sensordata)
 
 class SensorDataDetail(generics.RetrieveUpdateDestroyAPIView):
   queryset = SensorData.objects.all()
