@@ -19,16 +19,30 @@ class Cook(models.Model):
     recipe = models.ForeignKey(Recipe,related_name='cook')
     owner = models.ForeignKey('auth.User',related_name='cooks')
 
+    def __str__(self):
+      return self.created.strftime('%d/%m/%y') + " - " + self.recipe.title + " (" + self.owner.username + ")"
+
 class SensorData(models.Model):
   created = models.DateTimeField(auto_now_add=True)
   tempAmbient = models.FloatField(blank=False)
   tempInternal = models.FloatField(blank=False)
   speedFan = models.IntegerField(blank=False)
   controller = models.ForeignKey('auth.User', related_name='sensordata')
-  cook = models.ForeignKey(Cook, related_name='sensordata')
+  cook = models.ForeignKey(Cook, related_name='sensordata',blank=True,null=True)
 
   class Meta:
     ordering = ('created',)
+
+  def __str__(self): 
+    return self.created.strftime('%H:%M:%S') + " - " + self.controller.username
+
+  def save(self, *args, **kwargs):
+    try:
+      if (not self.controller.cook.latest('created').complete):
+        self.cook = self.controller.cook.latest('created')
+      super(SensorData,self).save(*args, **kwargs)
+    except Cook.DoesNotExist:
+      super(SensorData,self).save(*args, **kwargs)
 
 class Instruction(models.Model):
   created = models.DateTimeField(auto_now_add=True)

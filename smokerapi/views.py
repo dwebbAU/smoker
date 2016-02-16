@@ -13,9 +13,11 @@ class SensorDataList(generics.ListCreateAPIView):
   permission_classes = (permissions.IsAuthenticated,)  
 
   def perform_create(self, serializer):
-    sensordata = serializer.save(controller = self.request.user)
-    cook_set = Cook.objects.all()
-    calculate_instruction(cook_set,sensordata)
+#    try:
+#      sensordata = serializer.save(controller = self.request.user)
+#      calculate_instruction(self.request.user.cook,sensordata)
+#    except:
+      sensordata = serializer.save(controller = self.request.user)
 
 class SensorDataDetail(generics.RetrieveUpdateDestroyAPIView):
   queryset = SensorData.objects.all()
