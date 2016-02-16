@@ -13,11 +13,8 @@ class SensorDataList(generics.ListCreateAPIView):
   permission_classes = (permissions.IsAuthenticated,)  
 
   def perform_create(self, serializer):
-#    try:
-#      sensordata = serializer.save(controller = self.request.user)
-#      calculate_instruction(self.request.user.cook,sensordata)
-#    except:
       sensordata = serializer.save(controller = self.request.user)
+      calculate_instruction(sensordata)
 
 class SensorDataDetail(generics.RetrieveUpdateDestroyAPIView):
   queryset = SensorData.objects.all()
@@ -57,9 +54,13 @@ class InstructionList(generics.ListAPIView):
 
 class LatestInstruction(APIView):
     def get(self, request):
-        instruction = Instruction.objects.filter(controller=request.user).latest('created')
-        serializer = InstructionSerializer(instruction)
-        return Response(serializer.data)
+        try:
+          instruction = Instruction.objects.filter(controller=request.user).latest('created')
+          serializer = InstructionSerializer(instruction)
+          return Response(serializer.data)
+        except Instruction.DoesNotExist:
+          return Response(status = status.HTTP_404_NOT_FOUND)
+
 
 
 class InstructionDetail(generics.RetrieveAPIView):
