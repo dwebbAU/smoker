@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from smokerapi.models import SensorData, Instruction, Recipe, Cook
+from smokerapi.models import SensorData, Recipe, Cook
 from django.contrib.auth.models import User
 
 class SensorDataSerializer(serializers.ModelSerializer):
@@ -23,12 +23,6 @@ class CookSerializer(serializers.ModelSerializer):
   class Meta:
     model = Cook
     fields = ('id','created','complete','controller','recipe','user')
-
-class InstructionSerializer(serializers.ModelSerializer):
-  
-  class Meta:
-    model = Instruction
-    fields = ('id','speedFan','controller')
 
 class UserSerializer(serializers.ModelSerializer):
   sensordata = serializers.PrimaryKeyRelatedField(many=True,queryset=SensorData.objects.all())

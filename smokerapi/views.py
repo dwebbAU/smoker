@@ -1,8 +1,7 @@
-from smokerapi.models import SensorData, Instruction, Recipe, Cook
-from smokerapi.serializers import SensorDataSerializer, UserSerializer, InstructionSerializer, RecipeSerializer, CookSerializer
+from smokerapi.models import SensorData, Recipe, Cook
+from smokerapi.serializers import SensorDataSerializer, UserSerializer, RecipeSerializer, CookSerializer
 from rest_framework import generics, permissions
 from django.contrib.auth.models import User
-from smokerapi.services import calculate_instruction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -42,30 +41,6 @@ class CookDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Cook.objects.all()
     serializer_class = CookSerializer
     permission_classes = (permissions.IsAuthenticated,)
-
-class InstructionList(generics.ListAPIView):
-    serializer_class = InstructionSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_queryset(self):
-        user = self.request.user
-        return Instruction.objects.filter(controller=user)
-
-class LatestInstruction(APIView):
-    def get(self, request):
-        try:
-          instruction = Instruction.objects.filter(controller=request.user).latest('created')
-          serializer = InstructionSerializer(instruction)
-          return Response(serializer.data)
-        except Instruction.DoesNotExist:
-          return Response(status = status.HTTP_404_NOT_FOUND)
-
-
-
-class InstructionDetail(generics.RetrieveAPIView):
-  queryset = Instruction.objects.all()
-  serializer_class = InstructionSerializer
-  permission_classes = (permissions.IsAuthenticated,)
 
 class UserList(generics.ListAPIView):
   queryset = User.objects.all()
