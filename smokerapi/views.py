@@ -5,8 +5,11 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from smokerapi.permissions import OwnsDevice
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 
 class SensorDataList(generics.ListCreateAPIView):
+  authentication_classes = (TokenAuthentication,)
   queryset = SensorData.objects.all()
   serializer_class = SensorDataSerializer
   permission_classes = (permissions.IsAuthenticated,)  

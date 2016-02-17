@@ -3,5 +3,5 @@ from smokerweb import views
 
 urlpatterns = [
     url(r'^$',views.Index),
-
+   
 ]

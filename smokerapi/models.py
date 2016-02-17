@@ -6,8 +6,9 @@ from django.utils.translation import ugettext as _
 
 class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    title = models.TextField(blank=False)
-    max_temp = models.FloatField(blank=False)
+    title = models.CharField(blank=False, max_length=100)
+    targetInternalTemp = models.FloatField(blank=False)
+    maxAmbientTemp = models.FloatField(blank=False)
 
     def __unicode__(self):
         return self.title
@@ -52,12 +53,14 @@ class SensorData(models.Model):
 
   def calculate_target_speed_fan(self):
     if self.cook:
-      if self.cook.recipe.max_temp > self.tempAmbient:
+      if self.cook.recipe.maxAmbientTemp > self.tempAmbient:
         target_speed_fan = self.speedFan + 10
         return target_speed_fan
-      elif self.cook.recipe.max_temp < self.tempAmbient:
+      elif self.cook.recipe.maxAmbientTemp < self.tempAmbient:
         target_speed_fan = self.speedFan - 10
         return target_speed_fan
+      else:
+        return self.speedFan 
     else:
       return 0
   
@@ -72,7 +75,11 @@ class Profile(models.Model):
 
   account = models.OneToOneField('auth.User', related_name='profile')
   accountType = models.CharField(max_length=100,choices=ACCOUNT_TYPES)
-  owner = models.ForeignKey('auth.User', related_name='controllerprofile', blank=True, null=True)
+  owner = models.ForeignKey('auth.User', related_name='controllerprofile', blank=True, null=True, limit_choices_to={'profile__accountType':'USER'})
+
+  def clean(self):
+      if self.accountType == 'CONTROLLER' and self.owner is None:
+        raise ValidationError(_('A Controller must have an Owner.'))
 
   def __str__(self):
     return self.account.username
