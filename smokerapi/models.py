@@ -9,8 +9,9 @@ class Recipe(models.Model):
     title = models.CharField(blank=False, max_length=100)
     targetInternalTemp = models.FloatField(blank=False)
     maxAmbientTemp = models.FloatField(blank=False)
+    owner = models.ForeignKey('auth.User',related_name='recipes',limit_choices_to={'profile__accountType':'USER'})
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 class Cook(models.Model):
@@ -26,7 +27,7 @@ class Cook(models.Model):
             raise ValidationError(_('Controller is already involved in an active cook.'))
 
     def __str__(self):
-      return self.created.strftime('%d/%m/%y') + " - " + self.recipe.title + " (" + self.owner.username + ")"
+      return self.created.strftime('%d/%m/%y') + " - " + self.recipe.title
 
 class SensorData(models.Model):
   created = models.DateTimeField(auto_now_add=True)

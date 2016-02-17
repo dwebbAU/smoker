@@ -9,7 +9,7 @@ from smokerapi.permissions import OwnsDevice
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 
 class SensorDataList(generics.ListCreateAPIView):
-  authentication_classes = (TokenAuthentication,)
+  authentication_classes = (TokenAuthentication,SessionAuthentication)
   queryset = SensorData.objects.all()
   serializer_class = SensorDataSerializer
   permission_classes = (permissions.IsAuthenticated,)  

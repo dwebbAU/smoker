@@ -1,0 +1,79 @@
+
+
+{% block head %}
+
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Smoker Control</title>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script src="{% static 'smokerweb/js/justgage.js' %}"></script>
+    <script src="{% static 'smokerweb/js/raphael-2.1.4.min.js' %}"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+</head>
+
+{% endblock head %}
+
+
+{% block nav_bar %}
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">Smoker Control</a>
+    </div>
+    <ul class="nav navbar-nav">
+
+      <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Cooks<span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          {% for cook in cooks %}
+          <li><a href="#">{{ cook }}</a></li>
+          {% endfor %}
+          <hr size="1">
+          <li><a href="#">Create New</a></li>
+        </ul>
+      </li>
+
+      <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Controllers<span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          {% for controller in controllers %}
+          <li><a href="#">{{ controller }}</a></li>
+          {% endfor %}
+          <hr size="1">
+          <li><a href="#">Create New</a></li>
+        </ul>
+      </li>
+
+      <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Recipes<span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          {% for recipe in recipes %}
+          <li><a href="#">{{ recipe }}</a></li>
+          {% endfor %}
+          <hr size="1">
+          <li><a href="#">Create New</a></li>
+        </ul>
+      </li>
+
+
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="/accounts/logout/"><span class="glyphicon glyphicon-user"></span> Logout </a></li>
+      </ul>
+
+  </div>
+</nav>
+
+{% endblock nav_bar %}
+
+
+{% block content %}
+{% endblock content %}
+
+

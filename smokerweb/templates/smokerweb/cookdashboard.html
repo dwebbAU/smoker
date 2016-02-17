@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container-fluid">
+
+      <div class="row">
+          <div class="col-sm-2 col-sm-push-10" style="text-align: center">
+            <div class="" id="tempAmbient">
+
+            </div>
+            <br>
+            <div class="" id="tempInternal">
+
+            </div>
+            <br>
+            <div class="" id="speedFan">
+
+            </div>
+
+
+
+      </div>
+
+            <div class="col-sm-8">Graph Div</div>
+
+
+
+    </div>
+        </div>
+
+
+
+<script>
+$( document ).ready(function() {
+    var tempAmbientGuage = new JustGage({
+        id: "tempAmbient",
+        value: 67,
+        min: 0,
+        max: 200,
+        title: "Ambient Temperature"
+    });
+
+    var tempInternalGuage = new JustGage({
+        id: "tempInternal",
+        value: 67,
+        min: 0,
+        max: 200,
+        title: "Internal Temperature"
+    });
+
+    var speedFanGuage = new JustGage({
+        id: "speedFan",
+        value: 67,
+        min: 0,
+        max: 200,
+        title: "Blower Speed"
+    });
+
+
+
+    setInterval(function() {
+
+        $.getJSON("http://localhost/api/sensordata/", function(data) {
+            tempAmbientGuage.refresh(data[data.length - 1].tempAmbient,200);
+            tempInternalGuage.refresh(data[data.length - 1].tempInternal,200);
+            speedFanGuage.refresh(data[data.length - 1].speedFan,200);
+        })
+
+    }, 5000);
+
+});
+
+function drawCircles() {
+
+
+  var g = new JustGage({
+    id: "tempAmbient",
+    value: 67,
+    min: 0,
+    max: 100,
+    title: "Visitors"
+  });
+
+
+
+}
+
+function updateCircles() {
+    console.log("Run");
+
+
+
+}
+
+</script>
+
+{% endblock content %}

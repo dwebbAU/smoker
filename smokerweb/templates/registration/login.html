@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block nav_bar %}
+{% endblock nav_bar %}
+
+{% block content %}
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+<div class="jumbotron vertical-center" style="background:transparent !important">
+<div class="container">
+    <div class="row">
+        <div class="col-md-offset-5 col-md-3">
+            <div class="form-login">
+                <form class="form-signin" method="post" role="form" action="{% url 'django.contrib.auth.views.login' %}">
+                    {% csrf_token %}
+
+                    <h4 class="text-center">Smoker Controller Login</h4>
+                    <input class="form-control" placeholder="Username" id="id_username" maxlength="254" name="username" type="text" required autofocus=""/>
+                    <br/>
+                    <input class="form-control" placeholder="Password" id="id_password" maxlength="254" name="password" type="password" required />
+                    <br />
+                <div class="wrapper">
+                    <span class="group-btn">
+                        <button class="btn btn-md btn-primary btn-block" type="submit" value="submit">Login<i class="fa fa-sign-in"></i></button>
+                    </span>
+                </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+{% endblock content %}
+
