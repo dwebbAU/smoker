@@ -8,13 +8,17 @@ class SensorDataSerializer(serializers.ModelSerializer):
 
   class Meta:
     model = SensorData
-    fields = ('id','tempAmbient','tempInternal','speedFan','controller','cook','target_speed_fan')
+    fields = ('created','id','tempAmbient','tempInternal','speedFan','controller','cook','target_speed_fan')
 
 class RecipeSerializer(serializers.ModelSerializer):
 
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Recipe
-        fields = ('id','title','max_temp')
+        fields = ('id','title','targetInternalTemp','maxAmbientTemp','owner')
+
+
 
 class CookSerializer(serializers.ModelSerializer):
 

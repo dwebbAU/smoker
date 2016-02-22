@@ -8,15 +8,15 @@
 <html lang="en">
 <head>
   <title>Smoker Control</title>
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
-  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <script src="{% static 'smokerweb/js/justgage.js' %}"></script>
   <script src="{% static 'smokerweb/js/raphael-2.1.4.min.js' %}"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
   <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
-
+  <script src="{% static 'smokerweb/js/jquery.serializejson.js' %}"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -24,7 +24,7 @@
 </head>
 
 {% endblock head %}
-
+<body>
 
 {% block nav_bar %}
 
@@ -38,10 +38,10 @@
       <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Cooks<span class="caret"></span></a>
         <ul class="dropdown-menu">
           {% for cook in cooks %}
-          <li><a href="#">{{ cook }}</a></li>
+          <li><a href="{% url 'cook_dashboard' cook.pk %}">{{ cook }}</a></li>
           {% endfor %}
-          <hr size="1">
-          <li><a href="#">Create New</a></li>
+          <li role="separator" class="divider"></li>
+          <li><a href="" data-toggle="modal" data-target="#newCookModal">Create New Cook</a></li>
         </ul>
       </li>
 
@@ -50,8 +50,8 @@
           {% for controller in controllers %}
           <li><a href="#">{{ controller }}</a></li>
           {% endfor %}
-          <hr size="1">
-          <li><a href="#">Create New</a></li>
+          <li role="separator" class="divider"></li>
+          <li><a href="" data-toggle="modal" data-target="#newControllerModal">Create New Controller</a></li>
         </ul>
       </li>
 
@@ -60,8 +60,8 @@
           {% for recipe in recipes %}
           <li><a href="#">{{ recipe }}</a></li>
           {% endfor %}
-          <hr size="1">
-          <li><a href="#">Create New</a></li>
+          <li role="separator" class="divider"></li>
+          <li><a href="" data-toggle="modal" data-target="#newRecipeModal">Create New Recipe</a></li>
         </ul>
       </li>
 
@@ -76,8 +76,68 @@
 
 {% endblock nav_bar %}
 
+{% block modals %}
+
+<div id="newControllerModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class ="modal-title">Create New Controller</h4>
+      </div>
+      <div class="modal-body">
+        <form role="form">
+          <div class="form-group">
+            <label for="newControllerName">Controller Name</label>
+            <input type="title" id="newControllerName" class="form-control">
+            <small id="newControllerValidation" style="color:red"></small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="newControllerSubmit" class="btn btn-info" >Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="newRecipeModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class ="modal-title">New Recipe</h4>
+      </div>
+      <div class="modal-body">
+        <form role="form">
+          <div class="form-group">
+            <label for="newRecipeTitle">Recipe Name</label>
+            <input type="title" id="newRecipeTitle" class="form-control">
+            <small id="newRecipeTitleValidation" style="color:red"></small>
+          </div>
+          <div class="form-group">
+            <label for="newRecipeTargetInternalTemp">Target Food Temperature</label>
+            <input type="number" id="newRecipeTargetInternalTemp" class="form-control">
+            <small id="newRecipeTargetInternalTempValidation" style="color:red"></small>
+  	  </div>
+          <div class="form-group">
+            <label for="newRecipeMaxAmbientTemp">Maximum Smoker Temperature</label>
+            <input type="number" id="newRecipeMaxAmbientTemp" class="form-control">
+            <small id="newRecipeMaxAmbientTempValidation" style="color:red"></small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">  
+        <button id="newRecipeSubmit" class="btn btn-info" >Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock modals %}
 
 {% block content %}
 {% endblock content %}
-
+</body>
+</html>
 
