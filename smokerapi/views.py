@@ -1,4 +1,4 @@
-from smokerapi.models import SensorData, Recipe, Cook
+from smokerapi.models import SensorData, Recipe, Cook, Profile
 from smokerapi.serializers import SensorDataSerializer, UserSerializer, RecipeSerializer, CookSerializer
 from rest_framework import generics, permissions
 from django.contrib.auth.models import User
@@ -8,6 +8,7 @@ from rest_framework import status
 from smokerapi.permissions import OwnsDevice
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 import datetime
+from rest_framework.authtoken.models import Token
 
 class SensorDataList(generics.ListCreateAPIView):
   authentication_classes = (TokenAuthentication,SessionAuthentication)
@@ -17,7 +18,11 @@ class SensorDataList(generics.ListCreateAPIView):
 
   def perform_create(self, serializer):
       sensordata = serializer.save(controller = self.request.user)
-
+      PIDCont = sensordata.cook.PIDController
+      PIDCont.current_error = sensordata.cook.recipe.maxAmbientTemp - sensordata.tempAmbient
+      PIDCont.save()
+      sensordata.target_speed_fan = PIDCont.target_speed_fan
+      sensordata.save()
 
   def get_queryset(self):
       try:
@@ -28,9 +33,15 @@ class SensorDataList(generics.ListCreateAPIView):
       except:
         try:
           cook = self.request.META['HTTP_COOK']
-          return SensorData.objects.filter(controller__profile__owner = self.request.user,cook__pk=cook)
+          latest = self.request.META['HTTP_LATEST']
+          return SensorData.objects.filter(controller__profile__owner = self.request.user,cook__pk=cook).reverse()[:1]
         except:
-          return SensorData.objects.filter(controller__profile__owner = self.requets.user)
+          try:
+            cook = self.request.META['HTTP_COOK']
+            return SensorData.objects.filter(controller__profile__owner = self.request.user,cook__pk=cook)
+          except:
+            return SensorData.objects.filter(controller__profile__owner = self.request.user)
+
 
 
 class SensorDataDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -57,7 +68,15 @@ class CookList(generics.ListCreateAPIView):
     serializer_class = CookSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    def get_queryset(self):
+      try:
+        count = self.request.META['HTTP_LATEST']
+        return Cook.objects.filter(owner=self.request.user).order_by('-created')[:count]
+      except:
+        return Cook.objects.filter(owner=self.request.user)
+
     def perform_create(self, serializer):
+      
       cook = serializer.save(owner = self.request.user)
 
 class CookDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -65,10 +84,14 @@ class CookDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CookSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-class UserList(generics.ListAPIView):
+class UserList(generics.ListCreateAPIView):
   queryset = User.objects.all()
   serializer_class = UserSerializer
   permission_classes = (permissions.IsAuthenticated,)
+
+  def perform_create(self, serializer):
+    account = serializer.save()
+    profile = Profile.objects.createe(account=account,accountType='CONTROLLER',owner=self.request.user)
 
 class UserDetail(generics.RetrieveAPIView):
   queryset = User.objects.all()
@@ -78,6 +101,11 @@ class UserDetail(generics.RetrieveAPIView):
 class ControllerList(generics.ListCreateAPIView):
   serializer_class = UserSerializer
   permission_classes = (permissions.IsAuthenticated,)
+
+  def perform_create(self, serializer):
+    account = serializer.save()
+    profile = Profile.objects.create(account=account,accountType='CONTROLLER',owner=self.request.user)
+    token = Token.objects.create(user=account)
 
   def get_queryset(self):
     try:

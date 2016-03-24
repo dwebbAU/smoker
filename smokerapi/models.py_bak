@@ -3,9 +3,6 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
 from datetime import datetime
-from django.utils import timezone
-from django.utils.timezone import utc
-
 
 class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -27,28 +24,13 @@ class Cook(models.Model):
     warning = models.BooleanField(default=False)
     warning_message = models.CharField(max_length=200,blank=True,null=True)
 
-#    def clean(self):
-#        for cook in self.controller.cook.all():
-#          if not cook.complete and cook != self:
-#            raise ValidationError(_('Controller is already involved in an active cook.'))
+    def clean(self):
+        for cook in self.controller.cook.all():
+          if not cook.complete and cook != self:
+            raise ValidationError(_('Controller is already involved in an active cook.'))
 
     def __str__(self):
       return self.created.strftime('%d/%m/%y') + " - " + self.recipe.title
-
-
-    def save(self,*args,**kwargs):
-      if self.complete:
-        all_readings = self.sensordata.all()
-        last_reading = all_readings[0]
-        for reading in all_readings:
-          if ((reading.pk != last_reading.pk) and (abs((reading.tempAmbient - last_reading.tempAmbient)) < 2 )):  
-            reading.delete()
-          else:
-            last_reading = reading
-      for cook in self.controller.cook.all():
-        if not cook.complete and cook != self:
-          raise ValidationError(_('Controller is already involved in an active cook.'))
-      super(Cook,self).save(*args,**kwargs) 
 
 
 
@@ -61,42 +43,67 @@ class PIDController(models.Model):
   Cd = models.IntegerField(default=0,blank=False,null=False)
   current_error = models.IntegerField(default=0,blank=False,null=False)
   previous_error = models.IntegerField(default=0,blank=False,null=False)
-  current_time = models.DateTimeField(default=datetime.now,blank=True,null=True)
-  previous_time = models.DateTimeField(default=datetime.now,blank=True,null=True)
+  current_time = models.DateTimeField(blank=True,null=True)
+  previous_time = models.DateTimeField(blank=True,null=True)
   cook = models.OneToOneField(Cook,related_name='PIDController')
+
+  def save(self, *args, **kwargs):
+    self.current_time = datetime.now()
+    self.previous_time = self.current_time
+    super(PIDController,self).save(*args, **kwargs)
 
   def calculate_target_speed_fan(self):
 
-    
-    self.current_time = timezone.now()
+    file = open('/home/ubuntu/log','a')
 
-    timediff = self.current_time - self.previous_time
-    dt = timediff.total_seconds()
+    self.current_time = datetime.now()
+
+    file.write('current_error: ' + str(self.current_error) + '\n')
+
+    dt = self.current_time - self.previous_time
     de = self.current_error - self.previous_error
 
+    file.write('dt: ' + str(dt) + '\n')
+    file.write('de: ' + str(de) + '\n')
     self.Cp = self.Kp * self.current_error
 
+    file.write('Cp: ' + str(self.Cp) + '\n')    
 
-    if int(dt) > 0:
-      self.Ci += self.current_error/int(dt)
+
+    self.Ci = 0
+    sensordata = self.cook.sensordata.all()
+    for i in range(0,sensordata.count()):
+      if i > 0:
+        self.Ci += (self.cook.recipe.maxAmbientTemp - sensordata[i].tempAmbient) / (sensordata[i].created - sensordata[(i-1)].created).total_seconds()
+        file.write('run: ' + str(self.Ci) + '\n')
+        file.write('temp: ' + str(self.cook.recipe.maxAmbientTemp - sensordata[i].tempAmbient) + '\n')
+        file.write('reading created: ' + str(sensordata[i].created) + '\n')
+        file.write('diffs: ' + str((sensordata[i].created - sensordata[(i-1)].created).total_seconds()) + '\n')
+        file.write('\n\n')
+      else:
+        self.Ci = 0 
+
     
+    file.write('Ci: ' + str(self.Ci) + '\n')
   
     self.Cd = 0
-    if int(dt) > 0:
-      self.Cd = de/int(dt)
+    if dt.total_seconds() > 0:
+      self.Cd = de/dt.total_seconds()
+
+    file.write('Cd: ' + str(self.Cd) + '\n')     
 
     self.previous_time = self.current_time
     self.previous_error = self.current_error
 
+    file.close()
 
     self.save()
-    result = self.Cp + (self.Ki * self.Ci) - (self.Kd * self.Cd)
+    result = self.Cp + (self.Ki * self.Ci) + (self.Kd * self.Cd)
     if result > 100:
       result = 100
-    if result < 10:
-      result = 10
-    
-    return result 
+    if result < 0:
+      result = 0
+    return 0
 
   target_speed_fan = property(calculate_target_speed_fan)
 
@@ -108,7 +115,6 @@ class SensorData(models.Model):
   speedFan = models.IntegerField(blank=False)
   controller = models.ForeignKey('auth.User', related_name='sensordata',limit_choices_to={'profile__accountType':'CONTROLLER'})
   cook = models.ForeignKey(Cook, related_name='sensordata',blank=True,null=True)
-  target_speed_fan = models.IntegerField(blank=True,null=True)
 
   class Meta:
     ordering = ('created',)

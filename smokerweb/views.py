@@ -12,7 +12,8 @@ def Landing(request):
       current_cook = cooks.filter(complete=False).latest('created')
       return redirect('cook_dashboard',pk=current_cook.pk)
     except Cook.DoesNotExist:
-      return render(request,'smokerweb/nocook.html')
+      current_cook = cooks.latest('created')
+      return redirect('cook_dashboard',pk=current_cook.pk)
   except Cook.DoesNotExist:
     return render(request, 'smokerweb/nocook.html')  
 

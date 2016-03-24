@@ -1,0 +1,272 @@
+<script>
+
+$( document ).ready(function() {
+$("#graphScale").change(function(){
+  refreshCharts();
+});
+
+    var tempAmbientGuage = new JustGage({
+        id: "tempAmbient",
+        value: 0,
+        min: 0,
+        max: 200,
+        title: "Ambient Temperature"
+    });
+
+    var tempInternalGuage = new JustGage({
+        id: "tempInternal",
+        value: 0,
+        min: 0,
+        max: 400,
+        title: "Internal Temperature"
+    });
+
+    var speedFanGuage = new JustGage({
+        id: "speedFan",
+        value: 0,
+        min: 0,
+        max: 200,
+        title: "Blower Speed"
+    });
+
+  var cookStatistics = new Morris.Area({
+  element: 'cookStatistics',
+  data: [],
+  xkey: 'created',
+  ykeys: ['tempAmbient','tempInternal','speedFan'],
+  goals: [{{cook.recipe.targetInternalTemp}},{{cook.recipe.maxAmbientTemp}}],
+  goalLineColors: ['Red'],
+  labels: ['Ambient Temperature', 'Internal Temperature', 'Blower Speed'],
+  hideHover: 'Auto',
+  resize: 'True',
+  behaveLikeLine: 'True',
+  fillOpacity: '0.5',
+  pointSize: '1',
+});
+
+  function initiateGuages() {
+      $.ajax({
+          beforeSend: function(request){
+              request.setRequestHeader("COOK", {{ cook.pk }});
+          },
+          dataType: "json",
+          url: "/api/sensordata/",
+          success: function(data){
+              if(data.length > 0){
+                tempAmbientGuage.refresh(data[data.length -1].tempAmbient,200);
+                tempInternalGuage.refresh(data[data.length -1].tempInternal,200);
+                speedFanGuage.refresh(data[data.length -1].speedFan,100);
+                }
+              }
+          });
+  }
+
+  function refreshCharts() {
+
+      $.ajax({
+          beforeSend: function(request){
+              if($("#graphScale").val() > 0) {
+                  scaleSetting = $("#graphScale").val();
+                  currentTime = new Date();
+                  scale = new Date();
+                  scale.setHours(currentTime.getHours() - scaleSetting)
+                  request.setRequestHeader("SINCE", scale.getTime());
+		}             
+     		  request.setRequestHeader("COOK", {{ cook.pk }});
+             
+          },
+
+          dataType: "json",
+          url: "/api/sensordata/",
+          success: function(data){
+          if(data.length > 0){
+	    	tempAmbientGuage.refresh(data[data.length - 1].tempAmbient,200);
+            	tempInternalGuage.refresh(data[data.length - 1].tempInternal,200);
+            	speedFanGuage.refresh(data[data.length - 1].speedFan,100);
+            	cookStatistics.setData(data);
+                $("#chartNoData").hide();
+                $("#cookStatistics").show();
+
+		var currentTime = moment(new Date());
+		var lastReadingTime = moment(new Date(data[data.length -1].created));
+		var timeSinceLastReading = lastReadingTime.from(currentTime);
+		$("#lastReadingTimeDD").text(timeSinceLastReading);
+          	
+	  }else{
+	  var emptyData = []
+          $("#chartNoData").show();
+          cookStatistics.setData(emptyData);
+          $("#cookStatistics").hide();
+        }
+	}
+      });
+
+
+    }
+
+function refreshControlPanel() {
+  
+  $.ajax({
+    dataType: "json",
+    url: "/api/cooks/" + {{ cook.pk }},
+    success: function(data){
+      if(!data.complete){
+
+	var currentTime = moment(new Date());
+	var cookCreatedTime = moment(new Date(data.created));
+	var cookRunningTime = currentTime.from(cookCreatedTime,true);
+        $("#cookDurationDD").text(cookRunningTime);
+
+        
+ 
+	if(data.warning){
+          $("#cookNoWarningDD").hide();
+          $("#cookWarningDD").show();
+          $("#cookWarningMessageDD").show();
+	  $("#cookWarningMessageDD").text(data.warning_message);
+	  $('div').toggleClass("panel-info panel-danger",true);
+	}else{
+	  $("#cookNoWarningDD").show();
+	  $("#cookWarningDD").hide();
+          $("#cookWarningMessageDD").hide(); 
+	  $('div').toggleClass("panel-danger",false);
+        }
+	}
+	} 
+ });
+}
+
+
+initiateGuages();
+refreshCharts();
+refreshControlPanel();
+setInterval(refreshCharts,5000);
+setInterval(refreshControlPanel,3000);
+
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$("#newCookSubmit").click(function(){
+  var csrftoken = getCookie('csrftoken');
+
+  $.ajax({
+    beforeSend: function(request){
+      request.setRequestHeader("X-CSRFToken",csrftoken);
+      },
+    type:"POST",
+    url: "/api/cooks/",
+    dataType: "json",
+    data: {"controller":$("#newCookController").val(),"recipe":$("#newCookRecipe").val()},
+      success: function(msg){
+      window.location.replace("/");
+      },
+      error: function(msg){
+        console.log(msg);
+        if(typeof msg.responseJSON.non_field_errors != 'undefined'){
+          $("#newCookValidation").html(msg.responseJSON.non_field_errors[0]);
+        }
+
+      }
+    });
+  });
+
+$("#markcookascomplete").click(function(){
+  var csrftoken = getCookie('csrftoken');
+
+  $.ajax({
+    beforeSend: function(request){
+      request.setRequestHeader("X-CSRFToken",csrftoken);
+      },
+      type:"PUT",
+      url: "/api/cooks/" + {{ cook.pk }} + '/',
+      dataType: "json",
+      data: {"complete":"True","controller":{{cook.controller.pk}},"recipe":{{cook.recipe.pk}}},
+      success: function(msg){
+        location.reload();
+        },
+      error: function(msg){
+        console.log(msg);
+      }
+    });
+  });
+
+$("#newControllerSubmit").click(function(){
+   var csrftoken = getCookie('csrftoken');
+
+    $.ajax({
+      beforeSend: function(request){
+        request.setRequestHeader("X-CSRFToken",csrftoken);
+        },
+      type:"POST",
+      url: "/api/controllers/",
+      dataType: "json",
+      data: {"username":$("#newControllerName").val()},
+        success: function(msg){
+        location.reload();  
+        },
+        error: function(msg){
+          console.log(msg);
+          if(typeof msg.responseJSON.name != 'undefined'){
+            $("#newControllerValidation").html(msg.responseJSON.name[0]);
+          }
+        }
+      });
+     });
+
+$("#newRecipeSubmit").click(function(){
+   var csrftoken = getCookie('csrftoken');
+   var newRecipeInput = {};
+   newRecipeInput.title = $("#newRecipeTitle").val();
+   newRecipeInput.targetInternalTemp = $("#newRecipeTargetInternalTemp").val();
+   newRecipeInput.maxAmbientTemp = $("#newRecipeMaxAmbientTemp").val();
+   console.log(JSON.stringify(newRecipeInput));
+
+    $.ajax({
+      beforeSend: function(request){
+        request.setRequestHeader("X-CSRFToken",csrftoken);
+        },
+      type:"POST",
+      url: "/api/recipes/",
+      dataType: "json",
+      data: {"title":$("#newRecipeTitle").val(),"targetInternalTemp":$("#newRecipeTargetInternalTemp").val(),"maxAmbientTemp":$("#newRecipeMaxAmbientTemp").val()},
+        success: function(msg){
+	  console.log(msg);
+          $("#newRecipeModal").modal('hide');
+          location.reload();
+          },
+        error: function(msg){
+          console.log(msg);
+          if(typeof msg.responseJSON.title != 'undefined'){
+            $("#newRecipeTitleValidation").html(msg.responseJSON.title[0]);
+          }else{
+            $("#newRecipeTitleValidation").html("");
+          }
+          if(typeof msg.responseJSON.targetInternalTemp != 'undefined'){
+            $("#newRecipeTargetInternalTempValidation").html(msg.responseJSON.targetInternalTemp[0]);
+          }else{
+            $("#newRecipeTargetInternalTempValidation").html("");
+          }
+          if(typeof msg.responseJSON.maxAmbientTemp != 'undefined'){
+            $("#newRecipeMaxAmbientTempValidation").html(msg.responseJSON.maxAmbientTemp[0]);
+          }else{
+            $("#newRecipeMaxAmbientTempValidation").html("");
+          }
+        }
+     });
+  });
+});
+
+</script>

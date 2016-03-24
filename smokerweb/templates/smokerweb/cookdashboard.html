@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+{% include 'scripts.html' %}
     <div class="container-fluid">
 
       <div class="row">
@@ -18,12 +18,9 @@
 			
 			            <dl>
 				            <dt> Cook status </dt>
-				            {% if cook.warning == True %}
-				                <dd><span class="label label-warning">WARNING</span></dd>
-				       		<dd><i style="font-size:80%">{{ cook.warning_message }}</i></dd>
-					     {% else %}
-				                <dd><span class="label label-success">SWEET AS</span></dd>
-		                            {% endif %}
+				                <dd><span class="label label-warning" id="cookWarningDD" style="display:none">WARNING</span></dd>
+				       		<dd><i style="font-size:80%" id="cookWarningMessageDD" style="display:none"></i></dd>
+				                <dd><span class="label label-success" id="cookNoWarningDD">SWEET AS</span></dd>
 			            </dl>
 
                         <dl>
@@ -38,8 +35,17 @@
 
 			            <dl>
 				            <dt> Cook Duration </dt>
-				            <dd> {{ cook.created | timesince }} </dd>
+				            <dd id="cookDurationDD"> {{ cook.created | timesince }} </dd>
 			            </dl>
+				    <dl>
+					    <dt> Last Reading </dt>
+					    <dd id="lastReadingTimeDD"> </dd>
+				    </dl>
+				
+				    <dl>
+ 					    <dt> Mark Cook as Complete </dt>
+					    <dt><button type="button" class="btn btn-success btn-sm" id="markcookascomplete">Complete Cook</button></dt>
+				    </dl>
 
                     </div>
                 </div>
@@ -64,18 +70,24 @@
               <div class="panel panel-info">
                   <div class="panel-heading clearfix" ><i class="fa fa-line-chart"></i> Cook Statistics 
 			<span class="pull-right">
-				<select class="form-control" id="graphScale" >
+                                {% if cook.complete %}
+                                  <select class="form-control" id="graphScale" disabled="disabled">
+                                        <option value="0">All</option>
+                                  </select>
+                                {% else %}
+				  <select class="form-control" id="graphScale" >
 					<option value="1">Last Hour</option>
 					<option value="2">Last 2 Hours</option>
 					<option value="4">Last 4 Hours</option>
 		                        <option value="6">Last 6 Hours</option>
                 		        <option value="0">All</option>
 				</select>		
-	
+	                        {% endif %}
 			</span>
 			</div>
                       <div class="panel-body">
-                          <div id="cookStatistics" style="height: 500px"></div>
+                        <div class="alert alert-warning" id="chartNoData"><strong>No Readings Available</strong> Try changing the timeline above </div>  
+                        <div id="cookStatistics" style="height: 500px"></div>
                       </div>
 
               </div>
@@ -88,186 +100,5 @@
 
 
 
-<script>
-
-$( document ).ready(function() {
-
-
-    var tempAmbientGuage = new JustGage({
-        id: "tempAmbient",
-        value: 0,
-        min: 0,
-        max: 200,
-        title: "Ambient Temperature"
-    });
-
-    var tempInternalGuage = new JustGage({
-        id: "tempInternal",
-        value: 0,
-        min: 0,
-        max: 200,
-        title: "Internal Temperature"
-    });
-
-    var speedFanGuage = new JustGage({
-        id: "speedFan",
-        value: 0,
-        min: 0,
-        max: 200,
-        title: "Blower Speed"
-    });
-
-  var cookStatistics = new Morris.Line({
-  element: 'cookStatistics',
-  data: [],
-  xkey: 'created',
-  ykeys: ['tempAmbient','tempInternal','speedFan'],
-  labels: ['Ambient Temperature', 'Internal Temperature', 'Blower Speed'],
-  hideHover: 'Auto',
-  resize: 'True',
-});
-
-  function initiateGuages() {
-      $.ajax({
-          beforeSend: function(request){
-              request.setRequestHeader("COOK", {{ cook.pk }});
-          },
-          dataType: "json",
-          url: "/api/sensordata/",
-          success: function(data){
-              if(data.length > 0){
-                tempAmbientGuage.refresh(data[data.length -1].tempAmbient,400);
-                tempInternalGuage.refresh(data[data.length -1].tempInternal,400);
-                speedFanGuage.refresh(data[data.length -1].speedFan,100);
-                }
-              }
-          });
-  }
-
-  function refreshCharts() {
-
-      $.ajax({
-          beforeSend: function(request){
-              if($("#graphScale").val() > 0) {
-                  scaleSetting = $("#graphScale").val();
-                  currentTime = new Date();
-                  scale = new Date();
-                  scale.setHours(currentTime.getHours() - scaleSetting)
-                  request.setRequestHeader("SINCE", scale.getTime());
-                  request.setRequestHeader("COOK", {{ cook.pk }});
-                         
-             }
-          },
-
-          dataType: "json",
-          url: "/api/sensordata/",
-          success: function(data){
-          if(data.length > 0){
-	    	tempAmbientGuage.refresh(data[data.length - 1].tempAmbient,200);
-            	tempInternalGuage.refresh(data[data.length - 1].tempInternal,200);
-            	speedFanGuage.refresh(data[data.length - 1].speedFan,200);
-            	cookStatistics.setData(data);
-          	
-	  }else{
-		$("#cookStatistics").innerHTML = "No readings available";
-	}
-	}
-      });
-
-
-    }
-
-
-
-$("#controlPanel").css("min-height",($("#currentReadings").css("height")));
-initiateGuages();
-refreshCharts();
-setInterval(refreshCharts,5000);
-
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-$("#newControllerSubmit").click(function(){
-   var csrftoken = getCookie('csrftoken');
-
-    $.ajax({
-      beforeSend: function(request){
-        request.setRequestHeader("X-CSRFToken",csrftoken);
-        },
-      type:"POST",
-      url: "/api/controllers/",
-      dataType: "json",
-      data: {"name":$("#newRecipeName").val()},
-        success: function(msg){
-          console.log(msg);
-          },
-        error: function(msg){
-          console.log(msg);
-          if(typeof msg.responseJSON.name != 'undefined'){
-            $("#newControllerValidation").html(msg.responseJSON.name[0]);
-          }
-        }
-      });
-     });
-
-$("#newRecipeSubmit").click(function(){
-   var csrftoken = getCookie('csrftoken');
-   var newRecipeInput = {};
-   newRecipeInput.title = $("#newRecipeTitle").val();
-   newRecipeInput.targetInternalTemp = $("#newRecipeTargetInternalTemp").val();
-   newRecipeInput.maxAmbientTemp = $("#newRecipeMaxAmbientTemp").val();
-   console.log(JSON.stringify(newRecipeInput));
-
-    $.ajax({
-      beforeSend: function(request){
-        request.setRequestHeader("X-CSRFToken",csrftoken);
-        request.setRequestHeader("title","this is a test");
-        },
-      type:"POST",
-      url: "/api/recipes/",
-      dataType: "json",
-      data: {"title":$("#newRecipeTitle").val(),"targetInternalTemp":$("#newRecipeTargetInternalTemp").val(),"maxAmbientTemp":$("#newRecipeMaxAmbientTemp").val()},
-        success: function(msg){
-	  console.log(msg);
-          $("#newRecipeModal").modal('hide');
-          location.reload();
-          },
-        error: function(msg){
-          console.log(msg);
-          if(typeof msg.responseJSON.title != 'undefined'){
-            $("#newRecipeTitleValidation").html(msg.responseJSON.title[0]);
-          }else{
-            $("#newRecipeTitleValidation").html("");
-          }
-          if(typeof msg.responseJSON.targetInternalTemp != 'undefined'){
-            $("#newRecipeTargetInternalTempValidation").html(msg.responseJSON.targetInternalTemp[0]);
-          }else{
-            $("#newRecipeTargetInternalTempValidation").html("");
-          }
-          if(typeof msg.responseJSON.maxAmbientTemp != 'undefined'){
-            $("#newRecipeMaxAmbientTempValidation").html(msg.responseJSON.maxAmbientTemp[0]);
-          }else{
-            $("#newRecipeMaxAmbientTempValidation").html("");
-          }
-        }
-     });
-  });
-});
-
-
-</script>
 
 {% endblock content %}

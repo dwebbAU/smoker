@@ -84,7 +84,7 @@ TEMPLATES = [
     },
 ]
 
-TEMPLATES_DIR = "C:\smoker\smoker\smokerweb\templates"
+TEMPLATES_DIR = "/home/ubuntu/smoker/smoker/smokerweb/templates"
 
 WSGI_APPLICATION = 'smoker.wsgi.application'
 
