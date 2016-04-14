@@ -6,6 +6,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.utils.timezone import utc
 from clickatell.rest import Rest
+from django.conf import settings
 
 class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -28,7 +29,7 @@ class Cook(models.Model):
     warning_type = models.CharField(max_length=100,blank=True,null=True)
     warning_message = models.CharField(max_length=200,blank=True,null=True)
     pending_mop = models.BooleanField(default=False)
-
+    last_notify = models.DateTimeField(auto_now_add=True)
 #    def clean(self):
 #        for cook in self.controller.cook.all():
 #          if not cook.complete and cook != self:
@@ -135,24 +136,6 @@ class SensorData(models.Model):
     try:
      for cook in self.controller.cook.filter(complete=False): 
         self.cook = cook
-        if(cook.warning and cook.warning_type == 'TIMEOUT'):
-          cook.warning = False
-          cook.save()
-        if(cook.recipe.maxAmbientTemp - self.tempAmbient > 20):
-          if (not (cook.warning and cook.warning_type == 'TEMP')):
-            cook.warning = True
-            cook.warning_type = "TEMP"
-            cook.warning_message = "Temperature is well below target!"
-            cook.save()
-            clickatell = Rest('GRf1iv_FtCiU6tpabzKZsCpJlewGgOaeeftpAE72biY7I.4SbGdio20MPoH_Gz')
-            clickatell.sendMessage(['+61431744144'], "Smoker in strife! Temperature is well below target mang")
-
-
-        else:
-          if(cook.warning == True and cook.warning_type == "TEMP"):
-            cook.warning = False
-            cook.save()
-
         super(SensorData,self).save(*args, **kwargs)
     except Cook.DoesNotExist:
       return

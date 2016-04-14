@@ -29,14 +29,15 @@ $("#graphScale").change(function(){
         title: "Blower Speed"
     });
 
+
   var cookStatistics = new Morris.Area({
   element: 'cookStatistics',
   data: [],
   xkey: 'created',
-  ykeys: ['tempAmbient','tempInternal','speedFan','heap'],
+  ykeys: ['tempAmbient','tempInternal','speedFan'],
   goals: [{{cook.recipe.targetInternalTemp}},{{cook.recipe.maxAmbientTemp}}],
   goalLineColors: ['Red'],
-  labels: ['Ambient Temperature', 'Internal Temperature', 'Blower Speed', 'heap'],
+  labels: ['Ambient Temperature', 'Internal Temperature', 'Blower Speed'],
   hideHover: 'Auto',
   resize: 'True',
   behaveLikeLine: 'True',
@@ -56,6 +57,7 @@ $("#graphScale").change(function(){
                 tempAmbientGuage.refresh(data[data.length -1].tempAmbient,200);
                 tempInternalGuage.refresh(data[data.length -1].tempInternal,200);
                 speedFanGuage.refresh(data[data.length -1].speedFan,100);
+                heapGuage.fresh(data[data.length -1].heap,40000);
                 }
               }
           });
@@ -82,8 +84,9 @@ $("#graphScale").change(function(){
           if(data.length > 0){
 	    	tempAmbientGuage.refresh(data[data.length - 1].tempAmbient,200);
             	tempInternalGuage.refresh(data[data.length - 1].tempInternal,200);
-            	speedFanGuage.refresh(data[data.length - 1].speedFan,100);
-            	cookStatistics.setData(data);
+            	speedFanGuage.refresh(data[data.length - 1].speedFan,100);            	
+        	$("#controllerHeapDD").text(data[data.length -1].heap);
+                cookStatistics.setData(data);
                 $("#chartNoData").hide();
                 $("#cookStatistics").show();
 

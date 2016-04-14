@@ -24,6 +24,7 @@ SECRET_KEY = '!fs89a@ten8ggsn*yye5#6i92yv9!l@6!$yn(c8-+f1sejoz9z'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+SMS = True 
 
 ALLOWED_HOSTS = []
 
