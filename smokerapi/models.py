@@ -5,7 +5,7 @@ from django.utils.translation import ugettext as _
 from datetime import datetime
 from django.utils import timezone
 from django.utils.timezone import utc
-
+from clickatell.rest import Rest
 
 class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -25,7 +25,9 @@ class Cook(models.Model):
     recipe = models.ForeignKey(Recipe,related_name='cook')
     owner = models.ForeignKey('auth.User',related_name='cooks',limit_choices_to={'profile__accountType':'USER'})
     warning = models.BooleanField(default=False)
+    warning_type = models.CharField(max_length=100,blank=True,null=True)
     warning_message = models.CharField(max_length=200,blank=True,null=True)
+    pending_mop = models.BooleanField(default=False)
 
 #    def clean(self):
 #        for cook in self.controller.cook.all():
@@ -106,9 +108,21 @@ class SensorData(models.Model):
   tempAmbient = models.FloatField(blank=False)
   tempInternal = models.FloatField(blank=False)
   speedFan = models.IntegerField(blank=False)
+  heap = models.FloatField(blank=False)
   controller = models.ForeignKey('auth.User', related_name='sensordata',limit_choices_to={'profile__accountType':'CONTROLLER'})
   cook = models.ForeignKey(Cook, related_name='sensordata',blank=True,null=True)
   target_speed_fan = models.IntegerField(blank=True,null=True)
+ 
+  def determine_mop(self):
+    if self.cook.pending_mop:
+      self.cook.pending_mop = False
+      self.cook.save()
+      return True
+    else:
+      return False
+
+  mop = property(determine_mop)
+
 
   class Meta:
     ordering = ('created',)
@@ -121,10 +135,27 @@ class SensorData(models.Model):
     try:
      for cook in self.controller.cook.filter(complete=False): 
         self.cook = cook
+        if(cook.warning and cook.warning_type == 'TIMEOUT'):
+          cook.warning = False
+          cook.save()
+        if(cook.recipe.maxAmbientTemp - self.tempAmbient > 20):
+          if (not (cook.warning and cook.warning_type == 'TEMP')):
+            cook.warning = True
+            cook.warning_type = "TEMP"
+            cook.warning_message = "Temperature is well below target!"
+            cook.save()
+            clickatell = Rest('GRf1iv_FtCiU6tpabzKZsCpJlewGgOaeeftpAE72biY7I.4SbGdio20MPoH_Gz')
+            clickatell.sendMessage(['+61431744144'], "Smoker in strife! Temperature is well below target mang")
+
+
+        else:
+          if(cook.warning == True and cook.warning_type == "TEMP"):
+            cook.warning = False
+            cook.save()
+
         super(SensorData,self).save(*args, **kwargs)
     except Cook.DoesNotExist:
       return
-
 
 class Profile(models.Model):
   ACCOUNT_TYPES = (
@@ -135,6 +166,7 @@ class Profile(models.Model):
   account = models.OneToOneField('auth.User', related_name='profile')
   accountType = models.CharField(max_length=100,choices=ACCOUNT_TYPES)
   owner = models.ForeignKey('auth.User', related_name='controllerprofile', blank=True, null=True, limit_choices_to={'profile__accountType':'USER'})
+
 
   def clean(self):
       if self.accountType == 'CONTROLLER' and self.owner is None:
